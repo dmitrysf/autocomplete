@@ -32,7 +32,7 @@ class Service {
                     delete that.outgoingRequests[input];
                 });
             }
-        } else {
+        } else if (result.exist) {
         	return result.term;
         }
         return null;

@@ -139,6 +139,9 @@ class AVLTree {
              }
              // Left Left Case
              p.rightRotation();
+             if (head == p) {
+                 head = p.parent;
+             }
              break; // Leave the loop
            }
            if (p.balance == -1) {
@@ -154,6 +157,9 @@ class AVLTree {
              }
              // Right Right Case
              p.leftRotation();
+             if (head == p) {
+                 head = p.parent;
+             }
              break; // Leave the loop
            }
            if (p.balance == 1) {
@@ -165,9 +171,6 @@ class AVLTree {
          n = p;
          p = p.parent;
        } while (p != null);
-       if (p==null) {
-            head = n;
-       }
   }
   
 }

@@ -29023,6 +29023,9 @@ var AVLTree = (function () {
             }
             // Left Left Case
             p.rightRotation();
+            if (head == p) {
+              head = p.parent;
+            }
             break; // Leave the loop
           }
           if (p.balance == -1) {
@@ -29040,6 +29043,9 @@ var AVLTree = (function () {
             }
             // Right Right Case
             p.leftRotation();
+            if (head == p) {
+              head = p.parent;
+            }
             break; // Leave the loop
           }
           if (p.balance == 1) {
@@ -29051,9 +29057,6 @@ var AVLTree = (function () {
         n = p;
         p = p.parent;
       } while (p != null);
-      if (p == null) {
-        head = n;
-      }
     }
   }]);
 
@@ -29089,10 +29092,16 @@ var AutocompleteEditor = _react2['default'].createClass({
             suggestingWord: false
         };
     },
-    getCurrentWord: function getCurrentWord(cursorPosition) {
-        var text = this.refs.textarea.value;
-        var start = text.substr(0, cursorPosition).lastIndexOf(' ') + 1;
-        return text.substr(start, cursorPosition);
+    getCurrentWord: function getCurrentWord() {
+        var $inputElement = this.refs.textarea;
+        var selectionStart = $inputElement.selectionStart;
+        var selectionEnd = $inputElement.selectionEnd;
+        var text = $inputElement.value;
+        if (text.length != selectionEnd && text.charAt(selectionEnd) != ' ') {
+            return '';
+        }
+        var wordStart = text.substring(0, selectionStart).lastIndexOf(' ') + 1;
+        return text.substring(wordStart, selectionEnd);
     },
     getSelection: function getSelection() {
         var el = this.refs.textarea;
@@ -29137,6 +29146,23 @@ var AutocompleteEditor = _react2['default'].createClass({
         }
         return preventDefault;
     },
+    removeSelection: function removeSelection(removePosition, postRemoveCursorPosition) {
+        var $inputElement = this.refs.textarea;
+        var start = $inputElement.selectionStart > 0 ? $inputElement.selectionStart + removePosition : 0;
+        var end = $inputElement.selectionEnd;
+        var currentValue = $inputElement.value;
+        $inputElement.value = currentValue.slice(0, start) + currentValue.slice(end);
+        var pos = start > 0 ? start + postRemoveCursorPosition : 0;
+        $inputElement.selectionStart = pos;
+        $inputElement.selectionEnd = pos;
+    },
+    onMouseDown: function onMouseDown(event) {
+        if (this.state.suggestingWord) {
+            this.removeSelection(0, 0);
+            this.state.suggestingWord = false;
+        }
+    },
+
     performComplete: function performComplete(event) {
         var preventDefault = false;
         var $inputElement = this.refs.textarea;
@@ -29146,12 +29172,7 @@ var AutocompleteEditor = _react2['default'].createClass({
         if (event.which == 8 // Backspace
         ) {
                 if (this.state.suggestingWord) {
-                    var start = $inputElement.selectionStart > 0 ? $inputElement.selectionStart - 1 : 0;
-                    var end = $inputElement.selectionEnd;
-                    var currentValue = $inputElement.value;
-                    $inputElement.value = currentValue.slice(0, start) + currentValue.slice(end);
-                    $inputElement.selectionStart = start;
-                    $inputElement.selectionEnd = start;
+                    this.removeSelection(-1, 0);
                     preventDefault = true;
                 }
                 this.state.suggestingWord = false;
@@ -29168,20 +29189,16 @@ var AutocompleteEditor = _react2['default'].createClass({
         } else if (event.which == 37) {
             // left button
             if (this.state.suggestingWord) {
-                var start = $inputElement.selectionStart;
-                var end = $inputElement.selectionEnd;
-                var currentValue = $inputElement.value;
-                $inputElement.value = currentValue.slice(0, start) + currentValue.slice(end);
-                var pos = start > 0 ? start - 1 : 0;
-                $inputElement.selectionStart = pos;
-                $inputElement.selectionEnd = pos;
+                this.removeSelection(0, -1);
                 preventDefault = true;
             }
         } else if (event.which == 39) {
             // right button
             if ($inputElement.selectionStart != $inputElement.selectionEnd && this.state.suggestingWord) {
+                if (event.type == 'keydown') {
+                    this.moveSelectionStart(1);
+                }
                 preventDefault = true;
-                this.moveSelectionStart(1);
             }
         } else if (event.which == 16 || event.ctrlKey || event.which == 17 // Ctrl + Letter, or Ctrl
         ) {
@@ -29220,6 +29237,7 @@ var AutocompleteEditor = _react2['default'].createClass({
         return _react2['default'].createElement('textarea', {
             onKeyUp: this.performComplete,
             onKeyDown: this.performComplete,
+            onMouseDown: this.onMouseDown,
             ref: 'textarea',
             defaultValue: this.state.value
         });
@@ -29284,7 +29302,7 @@ var Service = (function () {
                         delete that.outgoingRequests[input];
                     });
                 }
-            } else {
+            } else if (result.exist) {
                 return result.term;
             }
             return null;
